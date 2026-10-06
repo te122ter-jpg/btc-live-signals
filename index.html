@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>متابعة صفقات ICT / SMC المباشرة</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: #0b0e14;
+      color: #e1e7ef;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 14px;
+      direction: rtl;
+    }
+    .card {
+      background: #151a23;
+      border: 1px solid #232a36;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      text-align: center;
+    }
+    .title { font-size: 13px; color: #8492a6; margin-bottom: 6px; }
+    .price { font-size: 28px; font-weight: bold; font-family: monospace; color: #38bdf8; direction: ltr; }
+    .signal-box {
+      padding: 14px;
+      border-radius: 10px;
+      font-size: 18px;
+      font-weight: bold;
+      margin-top: 8px;
+    }
+    .BUY { background: rgba(34, 197, 94, 0.15); color: #22c55e; border: 1px solid #22c55e; }
+    .SELL { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid #ef4444; }
+    .WAIT { background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid #f59e0b; }
+    
+    .condition-list { list-style: none; margin-top: 10px; }
+    .condition-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
+      background: #1c2330;
+      margin-bottom: 6px;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+    .status-tag { font-weight: bold; padding: 3px 8px; border-radius: 4px; font-size: 11px; }
+    .tag-ok { background: #22c55e; color: #fff; }
+    .tag-no { background: #374151; color: #9ca3af; }
+
+    .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 10px; }
+    .grid-item { background: #1c2330; padding: 10px; border-radius: 8px; font-size: 12px; text-align: right; }
+    .grid-item small { color: #8492a6; display: block; margin-bottom: 4px; }
+    .grid-item strong { font-size: 14px; direction: ltr; display: block; font-family: monospace; }
+    
+    .status-bar { font-size: 11px; color: #8492a6; margin-top: 12px; }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <div class="title">سعر BTC/USDT المباشر (n8n Engine)</div>
+    <div id="price" class="price">$00,000.00</div>
+    <div id="signalBox" class="signal-box WAIT">⏳ جاري الإتصال بالسيرفر...</div>
+  </div>
+
+  <div class="card">
+    <div class="title" style="text-align: right; font-weight: bold;">شروط الاستراتيجية (فريم 5m)</div>
+    <ul class="condition-list">
+      <li class="condition-item">
+        <span>1. سحب السيولة (Sweep)</span>
+        <span id="condSweep" class="status-tag tag-no">فحص...</span>
+      </li>
+      <li class="condition-item">
+        <span>2. كسر الهيكل (BOS)</span>
+        <span id="condBOS" class="status-tag tag-no">فحص...</span>
+      </li>
+      <li class="condition-item">
+        <span>3. الفجوة السعرية (FVG)</span>
+        <span id="condFVG" class="status-tag tag-no">فحص...</span>
+      </li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <div class="title" style="text-align: right; font-weight: bold;">مستويات التداول المقترحة</div>
+    <div class="grid">
+      <div class="grid-item"><small>وقف الخسارة (SL)</small><strong id="lvlSL" style="color:#ef4444;">--</strong></div>
+      <div class="grid-item"><small>الهدف الأول (TP1)</small><strong id="lvlTP1" style="color:#22c55e;">--</strong></div>
+      <div class="grid-item"><small>الهدف الثاني (TP2)</small><strong id="lvlTP2" style="color:#22c55e;">--</strong></div>
+      <div class="grid-item"><small>الهدف الثالث (TP3)</small><strong id="lvlTP3" style="color:#22c55e;">--</strong></div>
+    </div>
+  </div>
+
+  <div id="statusBar" class="status-bar">آخر تحديث: --:--:--</div>
+
+<script>
+  const WEBHOOK_URL = "https://abwnn88n.app.n8n.cloud/webhook/get-live-trade";
+
+  async function fetchLiveData() {
+    try {
+      const response = await fetch(WEBHOOK_URL);
+      const data = await response.json();
+
+      // تحديث السعر
+      if (data.price) {
+        document.getElementById("price").textContent = "$" + parseFloat(data.price).toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+      }
+
+      // تحديث الإشارة
+      const signalBox = document.getElementById("signalBox");
+      const sig = data.signal || "WAIT";
+      if (sig === "BUY") {
+        signalBox.textContent = "🟢 شراء (BUY ICT)";
+        signalBox.className = "signal-box BUY";
+      } else if (sig === "SELL") {
+        signalBox.textContent = "🔴 بيع (SELL ICT)";
+        signalBox.className = "signal-box SELL";
+      } else {
+        signalBox.textContent = "🟡 انتظار (مراقبة السيولة)";
+        signalBox.className = "signal-box WAIT";
+      }
+
+      // تحديث الشروط
+      updateTag("condSweep", data.sweep);
+      updateTag("condBOS", data.bos);
+      updateTag("condFVG", data.fvg);
+
+      // احتساب المستويات المقترحة تلقائياً
+      if (data.price && (sig === "BUY" || sig === "SELL")) {
+        const p = parseFloat(data.price);
+        if (sig === "BUY") {
+          document.getElementById("lvlSL").textContent = "$" + (p - 120).toFixed(2);
+          document.getElementById("lvlTP1").textContent = "$" + (p + 180).toFixed(2);
+          document.getElementById("lvlTP2").textContent = "$" + (p + 300).toFixed(2);
+          document.getElementById("lvlTP3").textContent = "$" + (p + 450).toFixed(2);
+        } else {
+          document.getElementById("lvlSL").textContent = "$" + (p + 120).toFixed(2);
+          document.getElementById("lvlTP1").textContent = "$" + (p - 180).toFixed(2);
+          document.getElementById("lvlTP2").textContent = "$" + (p - 300).toFixed(2);
+          document.getElementById("lvlTP3").textContent = "$" + (p - 450).toFixed(2);
+        }
+      } else {
+        resetTradeLevels();
+      }
+
+      document.getElementById("statusBar").textContent = "آخر تحديث: " + new Date().toLocaleTimeString('ar-SA');
+
+    } catch (e) {
+      console.error("خطأ في الاتصال بالـ Webhook", e);
+      document.getElementById("statusBar").textContent = "❌ تعذر الاتصال بسيرفر n8n";
+    }
+  }
+
+  function updateTag(id, isTrue) {
+    const el = document.getElementById(id);
+    if (isTrue) {
+      el.textContent = "مكتمل ✓";
+      el.className = "status-tag tag-ok";
+    } else {
+      el.textContent = "غير مكتمل ❌";
+      el.className = "status-tag tag-no";
+    }
+  }
+
+  function resetTradeLevels() {
+    document.getElementById("lvlSL").textContent = "--";
+    document.getElementById("lvlTP1").textContent = "--";
+    document.getElementById("lvlTP2").textContent = "--";
+    document.getElementById("lvlTP3").textContent = "--";
+  }
+
+  fetchLiveData();
+  setInterval(fetchLiveData, 5000); // تحديث تلقائي كل 5 ثوانٍ
+</script>
+</body>
+</html>
