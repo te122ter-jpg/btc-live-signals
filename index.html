@@ -1,179 +1,435 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>متابعة صفقات ICT / SMC المباشرة</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      background-color: #0b0e14;
-      color: #e1e7ef;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      padding: 14px;
-      direction: rtl;
-    }
-    .card {
-      background: #151a23;
-      border: 1px solid #232a36;
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-      text-align: center;
-    }
-    .title { font-size: 13px; color: #8492a6; margin-bottom: 6px; }
-    .price { font-size: 28px; font-weight: bold; font-family: monospace; color: #38bdf8; direction: ltr; }
-    .signal-box {
-      padding: 14px;
-      border-radius: 10px;
-      font-size: 18px;
-      font-weight: bold;
-      margin-top: 8px;
-    }
-    .BUY { background: rgba(34, 197, 94, 0.15); color: #22c55e; border: 1px solid #22c55e; }
-    .SELL { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid #ef4444; }
-    .WAIT { background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid #f59e0b; }
-    
-    .condition-list { list-style: none; margin-top: 10px; }
-    .condition-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px;
-      background: #1c2330;
-      margin-bottom: 6px;
-      border-radius: 8px;
-      font-size: 13px;
-    }
-    .status-tag { font-weight: bold; padding: 3px 8px; border-radius: 4px; font-size: 11px; }
-    .tag-ok { background: #22c55e; color: #fff; }
-    .tag-no { background: #374151; color: #9ca3af; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام المحفظة مع جني الأرباح ووقف الخسارة (لوت 0.03)</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0d1117;
+            color: #c9d1d9;
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            transition: background-color 0.3s ease;
+        }
+        .container {
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 20px;
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        }
+        body.flash-buy { background-color: #033a16; }
+        body.flash-sell { background-color: #4c1113; }
+        body.flash-cut { background-color: #511215; animation: pulse 0.5s infinite; }
+        body.flash-win { background-color: #073b1d; animation: pulse 0.5s infinite; }
 
-    .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 10px; }
-    .grid-item { background: #1c2330; padding: 10px; border-radius: 8px; font-size: 12px; text-align: right; }
-    .grid-item small { color: #8492a6; display: block; margin-bottom: 4px; }
-    .grid-item strong { font-size: 14px; direction: ltr; display: block; font-family: monospace; }
-    
-    .status-bar { font-size: 11px; color: #8492a6; margin-top: 12px; }
-  </style>
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
+
+        h2 {
+            text-align: center;
+            color: #2ea043;
+            margin-top: 0;
+            margin-bottom: 5px;
+            font-size: 17px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #8b949e;
+            font-size: 11px;
+            margin-bottom: 15px;
+        }
+        .status {
+            text-align: center;
+            font-size: 11px;
+            color: #8b949e;
+            margin-bottom: 15px;
+        }
+        .dot {
+            height: 8px;
+            width: 8px;
+            background-color: #f85149;
+            border-radius: 50%;
+            display: inline-block;
+            margin-left: 5px;
+        }
+        .dot.connected { background-color: #2ea043; }
+        
+        .price-box {
+            background-color: #21262d;
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            margin-bottom: 12px;
+        }
+        .price-title { font-size: 12px; color: #8b949e; }
+        .price-value { font-size: 26px; font-weight: bold; color: #ffffff; margin-top: 5px; }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .card {
+            background-color: #21262d;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+        }
+        .card.resistance { border-top: 3px solid #f85149; }
+        .card.support { border-top: 3px solid #2ea043; }
+        .card-title { font-size: 11px; color: #8b949e; margin-bottom: 3px; }
+        .card-value { font-size: 15px; font-weight: bold; }
+        .support .card-value { color: #2ea043; }
+        .resistance .card-value { color: #f85149; }
+
+        .tracker-box {
+            background-color: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            font-size: 12px;
+        }
+        .tracker-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+        .tracker-label { color: #8b949e; }
+        .tracker-val { font-weight: bold; }
+        
+        .pnl-box {
+            background-color: #1f242c;
+            border: 2px solid #30363d;
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            margin-bottom: 12px;
+        }
+        .pnl-title { font-size: 11px; color: #8b949e; margin-bottom: 3px; }
+        .pnl-value { font-size: 20px; font-weight: bold; }
+
+        .signal-box {
+            background-color: #1f242c;
+            border: 1px dashed #2ea043;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .signal-title { font-size: 10px; color: #8b949e; margin-bottom: 3px; }
+        .signal-action { font-size: 13px; font-weight: bold; color: #2ea043; }
+
+        .history-section {
+            background-color: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 10px;
+            max-height: 180px;
+            overflow-y: auto;
+        }
+        .history-title {
+            font-size: 12px;
+            color: #f0883e;
+            font-weight: bold;
+            margin-bottom: 8px;
+            text-align: center;
+            border-bottom: 1px solid #30363d;
+            padding-bottom: 5px;
+        }
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            padding: 5px 0;
+            border-bottom: 1px dashed #30363d;
+        }
+        .history-item:last-child { border-bottom: none; }
+        .history-profit { color: #2ea043; font-weight: bold; }
+        .history-loss { color: #f85149; font-weight: bold; }
+    </style>
 </head>
 <body>
 
-  <div class="card">
-    <div class="title">سعر BTC/USDT المباشر (n8n Engine)</div>
-    <div id="price" class="price">$00,000.00</div>
-    <div id="signalBox" class="signal-box WAIT">⏳ جاري الإتصال بالسيرفر...</div>
-  </div>
-
-  <div class="card">
-    <div class="title" style="text-align: right; font-weight: bold;">شروط الاستراتيجية (فريم 5m)</div>
-    <ul class="condition-list">
-      <li class="condition-item">
-        <span>1. سحب السيولة (Sweep)</span>
-        <span id="condSweep" class="status-tag tag-no">فحص...</span>
-      </li>
-      <li class="condition-item">
-        <span>2. كسر الهيكل (BOS)</span>
-        <span id="condBOS" class="status-tag tag-no">فحص...</span>
-      </li>
-      <li class="condition-item">
-        <span>3. الفجوة السعرية (FVG)</span>
-        <span id="condFVG" class="status-tag tag-no">فحص...</span>
-      </li>
-    </ul>
-  </div>
-
-  <div class="card">
-    <div class="title" style="text-align: right; font-weight: bold;">مستويات التداول المقترحة</div>
-    <div class="grid">
-      <div class="grid-item"><small>وقف الخسارة (SL)</small><strong id="lvlSL" style="color:#ef4444;">--</strong></div>
-      <div class="grid-item"><small>الهدف الأول (TP1)</small><strong id="lvlTP1" style="color:#22c55e;">--</strong></div>
-      <div class="grid-item"><small>الهدف الثاني (TP2)</small><strong id="lvlTP2" style="color:#22c55e;">--</strong></div>
-      <div class="grid-item"><small>الهدف الثالث (TP3)</small><strong id="lvlTP3" style="color:#22c55e;">--</strong></div>
+<div class="container" id="main-container">
+    <h2>نظام إدارة الصفقات الآلي (لوت 0.03)</h2>
+    <div class="subtitle">جني أرباح تلقائي + حماية ضد الانعكاس</div>
+    
+    <div class="status">
+        الحالة: <span id="status-text">جاري الاتصال...</span>
+        <span id="connection-dot" class="dot"></span>
     </div>
-  </div>
 
-  <div id="statusBar" class="status-bar">آخر تحديث: --:--:--</div>
+    <div class="price-box">
+        <div class="price-title">السعر الفوري الحالي (مطابق لـ MT5)</div>
+        <div id="live-price" class="price-value">--</div>
+    </div>
+
+    <div class="grid">
+        <div class="card resistance">
+            <div class="card-title">مقاومة القمة (بيع)</div>
+            <div id="res-price" class="card-value">--</div>
+        </div>
+        <div class="card support">
+            <div class="card-title">دعم القاع (شراء)</div>
+            <div id="sup-price" class="card-value">--</div>
+        </div>
+    </div>
+
+    <div class="tracker-box">
+        <div class="tracker-row">
+            <span class="tracker-label">حجم اللوت:</span>
+            <span class="tracker-val" style="color: #2ea043;">0.03 لوت</span>
+        </div>
+        <div class="tracker-row">
+            <span class="tracker-label">سعر الدخول:</span>
+            <span id="entry-price" class="tracker-val">--</span>
+        </div>
+        <div class="tracker-row">
+            <span class="tracker-label">هدف الربح الآلي (TP):</span>
+            <span id="tp-price" class="tracker-val" style="color: #2ea043;">--</span>
+        </div>
+        <div class="tracker-row">
+            <span class="tracker-label">وقف الخسارة (SL):</span>
+            <span id="sl-price" class="tracker-val" style="color: #f85149;">--</span>
+        </div>
+        <div class="tracker-row">
+            <span class="tracker-label">حالة الصفقة:</span>
+            <span id="trade-type" class="tracker-val">بانتظار فرصة جديدة</span>
+        </div>
+    </div>
+
+    <div class="pnl-box">
+        <div class="pnl-title">الربح / الخسارة المباشرة (PnL)</div>
+        <div id="pnl-value" class="pnl-value" style="color: #8b949e;">$0.00</div>
+    </div>
+
+    <div class="signal-box" id="signal-box-container">
+        <div class="signal-title">توجيه الأمان اللحظي</div>
+        <div id="signal-text" class="signal-action">مراقبة دقيقة للأهداف...</div>
+    </div>
+
+    <div class="history-section">
+        <div class="history-title">سجل صفقات اليوم (مغلقة)</div>
+        <div id="history-list" style="color: #8b949e; text-align: center; font-size: 11px;">لا توجد صفقات مغلقة حتى الآن</div>
+    </div>
+</div>
 
 <script>
-  const WEBHOOK_URL = "https://abwnn88n.app.n8n.cloud/webhook/get-live-trade";
+    const wsUrl = 'wss://stream.binance.com:9443/ws/btcusdt@bookTicker';
+    const priceOffset = -40;
+    const lotSize = 0.03;
 
-  async function fetchLiveData() {
-    try {
-      const response = await fetch(WEBHOOK_URL);
-      const data = await response.json();
+    const telegramToken = '8547422933:AAG8fuNsOTovdoJ3PcHProubn2Knrinkhmw';
+    const chatId = '-1003900259258';
 
-      // تحديث السعر
-      if (data.price) {
-        document.getElementById("price").textContent = "$" + parseFloat(data.price).toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2});
-      }
+    let lastAlertState = 'neutral'; 
+    let lastAlertTime = 0;
+    let basePrice = null;
+    let fixedHigh = null;
+    let fixedLow = null;
+    
+    let activeTrade = null; 
+    let entryPriceVal = 0;
+    let stopLossVal = 0;  
+    let takeProfitVal = 0;
+    let tradeHistory = []; 
 
-      // تحديث الإشارة
-      const signalBox = document.getElementById("signalBox");
-      const sig = data.signal || "WAIT";
-      if (sig === "BUY") {
-        signalBox.textContent = "🟢 شراء (BUY ICT)";
-        signalBox.className = "signal-box BUY";
-      } else if (sig === "SELL") {
-        signalBox.textContent = "🔴 بيع (SELL ICT)";
-        signalBox.className = "signal-box SELL";
-      } else {
-        signalBox.textContent = "🟡 انتظار (مراقبة السيولة)";
-        signalBox.className = "signal-box WAIT";
-      }
-
-      // تحديث الشروط
-      updateTag("condSweep", data.sweep);
-      updateTag("condBOS", data.bos);
-      updateTag("condFVG", data.fvg);
-
-      // احتساب المستويات المقترحة تلقائياً
-      if (data.price && (sig === "BUY" || sig === "SELL")) {
-        const p = parseFloat(data.price);
-        if (sig === "BUY") {
-          document.getElementById("lvlSL").textContent = "$" + (p - 120).toFixed(2);
-          document.getElementById("lvlTP1").textContent = "$" + (p + 180).toFixed(2);
-          document.getElementById("lvlTP2").textContent = "$" + (p + 300).toFixed(2);
-          document.getElementById("lvlTP3").textContent = "$" + (p + 450).toFixed(2);
-        } else {
-          document.getElementById("lvlSL").textContent = "$" + (p + 120).toFixed(2);
-          document.getElementById("lvlTP1").textContent = "$" + (p - 180).toFixed(2);
-          document.getElementById("lvlTP2").textContent = "$" + (p - 300).toFixed(2);
-          document.getElementById("lvlTP3").textContent = "$" + (p - 450).toFixed(2);
-        }
-      } else {
-        resetTradeLevels();
-      }
-
-      document.getElementById("statusBar").textContent = "آخر تحديث: " + new Date().toLocaleTimeString('ar-SA');
-
-    } catch (e) {
-      console.error("خطأ في الاتصال بالـ Webhook", e);
-      document.getElementById("statusBar").textContent = "❌ تعذر الاتصال بسيرفر n8n";
+    function sendTelegramAlert(message) {
+        const now = Date.now();
+        if (now - lastAlertTime < 60000) return;
+        const url = `https://api.telegram.org/bot${telegramToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(message)}`;
+        fetch(url).then(res => res.json()).then(data => {
+            if(data.ok) lastAlertTime = now;
+        }).catch(err => console.error(err));
     }
-  }
 
-  function updateTag(id, isTrue) {
-    const el = document.getElementById(id);
-    if (isTrue) {
-      el.textContent = "مكتمل ✓";
-      el.className = "status-tag tag-ok";
-    } else {
-      el.textContent = "غير مكتمل ❌";
-      el.className = "status-tag tag-no";
+    function addTradeToHistory(type, entry, exit, pnl) {
+        const timeNow = new Date().toLocaleTimeString('ar-SA', {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+        tradeHistory.unshift({ type, entry, exit, pnl, time: timeNow });
+        
+        const historyList = document.getElementById('history-list');
+        historyList.innerHTML = '';
+
+        tradeHistory.forEach(t => {
+            const isProfit = t.pnl >= 0;
+            const pnlClass = isProfit ? 'history-profit' : 'history-loss';
+            const pnlFormatted = (isProfit ? `+$${t.pnl.toFixed(2)}` : `-$${Math.abs(t.pnl).toFixed(2)}`);
+            
+            const item = document.createElement('div');
+            item.className = 'history-item';
+            item.innerHTML = `
+                <span>${t.time} | ${t.type} (دخول: $${t.entry.toFixed(0)})</span>
+                <span class="${pnlClass}">${pnlFormatted}</span>
+            `;
+            historyList.appendChild(item);
+        });
     }
-  }
 
-  function resetTradeLevels() {
-    document.getElementById("lvlSL").textContent = "--";
-    document.getElementById("lvlTP1").textContent = "--";
-    document.getElementById("lvlTP2").textContent = "--";
-    document.getElementById("lvlTP3").textContent = "--";
-  }
+    const bodyElement = document.body;
+    const priceElement = document.getElementById('live-price');
+    const resElement = document.getElementById('res-price');
+    const supElement = document.getElementById('sup-price');
+    const statusText = document.getElementById('status-text');
+    const connectionDot = document.getElementById('connection-dot');
+    
+    const entryPriceElement = document.getElementById('entry-price');
+    const tpPriceElement = document.getElementById('tp-price');
+    const slPriceElement = document.getElementById('sl-price');
+    const tradeTypeElement = document.getElementById('trade-type');
+    const pnlElement = document.getElementById('pnl-value');
+    const signalTextElement = document.getElementById('signal-text');
 
-  fetchLiveData();
-  setInterval(fetchLiveData, 5000); // تحديث تلقائي كل 5 ثوانٍ
+    function connectWebSocket() {
+        const ws = new WebSocket(wsUrl);
+
+        ws.onopen = function() {
+            statusText.innerText = 'متصل بنظام TP/SL الآلي';
+            connectionDot.classList.add('connected');
+        };
+
+        ws.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            const bestBid = parseFloat(data.b) + priceOffset;
+            const bestAsk = parseFloat(data.a) + priceOffset;
+            const midPrice = (bestBid + bestAsk) / 2;
+
+            priceElement.innerText = `$${midPrice.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+
+            if (basePrice === null) {
+                basePrice = midPrice;
+                fixedHigh = Math.round(basePrice + 100);
+                fixedLow = Math.round(basePrice - 100);
+            }
+
+            resElement.innerText = `$${fixedHigh.toLocaleString()}`;
+            supElement.innerText = `$${fixedLow.toLocaleString()}`;
+
+            bodyElement.classList.remove('flash-buy', 'flash-sell', 'flash-cut', 'flash-win');
+
+            let distToLow = midPrice - fixedLow;
+            let distToHigh = fixedHigh - midPrice;
+
+            if (!activeTrade) {
+                if (distToLow <= 15 && distToLow >= -5) {
+                    activeTrade = 'شراء (BUY)';
+                    entryPriceVal = midPrice;
+                    stopLossVal = fixedLow - 35;  // وقف خسارة آمن
+                    takeProfitVal = entryPriceVal + 60; // هدف ربح واضح
+
+                    entryPriceElement.innerText = `$${entryPriceVal.toFixed(2)}`;
+                    tpPriceElement.innerText = `$${takeProfitVal.toFixed(2)}`;
+                    slPriceElement.innerText = `$${stopLossVal.toFixed(2)}`;
+                    tradeTypeElement.innerText = "🟢 شراء محمي";
+                    tradeTypeElement.style.color = "#2ea043";
+                    
+                    bodyElement.classList.add('flash-buy');
+                    signalTextElement.innerHTML = "🟢 صفقة شراء نشطة (تتبع الأهداف)";
+
+                    if (lastAlertState !== 'buy') {
+                        lastAlertState = 'buy';
+                        sendTelegramAlert(`🛡️ [شراء آمن BTC]\nاللـوت: ${lotSize}\nالدخول: $${entryPriceVal.toFixed(2)}\nالهدف (TP): $${takeProfitVal.toFixed(2)}\nوقف الخسارة (SL): $${stopLossVal.toFixed(2)}`);
+                    }
+                } 
+                else if (distToHigh <= 15 && distToHigh >= -5) {
+                    activeTrade = 'بيع (SELL)';
+                    entryPriceVal = midPrice;
+                    stopLossVal = fixedHigh + 35;  // وقف خسارة آمن
+                    takeProfitVal = entryPriceVal - 60; // هدف ربح واضح
+
+                    entryPriceElement.innerText = `$${entryPriceVal.toFixed(2)}`;
+                    tpPriceElement.innerText = `$${takeProfitVal.toFixed(2)}`;
+                    slPriceElement.innerText = `$${stopLossVal.toFixed(2)}`;
+                    tradeTypeElement.innerText = "🔴 بيع محمي";
+                    tradeTypeElement.style.color = "#f85149";
+                    
+                    bodyElement.classList.add('flash-sell');
+                    signalTextElement.innerHTML = "🔴 صفقة بيع نشطة (تتبع الأهداف)";
+
+                    if (lastAlertState !== 'sell') {
+                        lastAlertState = 'sell';
+                        sendTelegramAlert(`🛡️ [بيع آمن BTC]\nاللـوت: ${lotSize}\nالدخول: $${entryPriceVal.toFixed(2)}\nالهدف (TP): $${takeProfitVal.toFixed(2)}\nوقف الخسارة (SL): $${stopLossVal.toFixed(2)}`);
+                    }
+                } else {
+                    signalTextElement.innerHTML = "⏳ بانتظار فرصة نظيفة ومضبوطة...";
+                }
+            } 
+            else {
+                let priceDiff = (activeTrade.includes('BUY')) ? (midPrice - entryPriceVal) : (entryPriceVal - midPrice);
+                let pnlUSD = priceDiff * lotSize; 
+
+                pnlElement.innerText = `$${pnlUSD.toFixed(2)}`;
+                if (pnlUSD >= 0) {
+                    pnlElement.style.color = "#2ea043";
+                } else {
+                    pnlElement.style.color = "#f85149";
+                }
+
+                // التحقق من وصول الهدف (الربح) أو ضرب وقف الخسارة (الانعكاس)
+                let hitTP = (activeTrade.includes('BUY') && midPrice >= takeProfitVal) || (activeTrade.includes('SELL') && midPrice <= takeProfitVal);
+                let hitSL = (activeTrade.includes('BUY') && midPrice <= stopLossVal) || (activeTrade.includes('SELL') && midPrice >= stopLossVal);
+
+                if (hitTP) {
+                    bodyElement.classList.add('flash-win');
+                    signalTextElement.innerHTML = "🎯 تم تحقيق هدف الربح بنجاح!";
+                    signalTextElement.style.color = "#2ea043";
+
+                    addTradeToHistory(activeTrade, entryPriceVal, midPrice, pnlUSD);
+                    sendTelegramAlert(`🎯 [تم تحقيق الهدف بنجاح!]\nالربح المحقق: +$${pnlUSD.toFixed(2)}`);
+
+                    setTimeout(() => resetTradeState(), 4000);
+                } 
+                else if (hitSL) {
+                    bodyElement.classList.add('flash-cut');
+                    signalTextElement.innerHTML = "🚨 تم تفعيل وقف الخسارة (حماية للمحفظة)!";
+                    signalTextElement.style.color = "#f85149";
+
+                    addTradeToHistory(activeTrade, entryPriceVal, midPrice, pnlUSD);
+                    sendTelegramAlert(`🚨 [تم قطع الخسارة لتفادي التعليقة]\nالنتيجة: -$${Math.abs(pnlUSD).toFixed(2)}`);
+
+                    setTimeout(() => resetTradeState(), 4000);
+                }
+            }
+        };
+
+        ws.onerror = function() {
+            statusText.innerText = 'خطأ في الاتصال';
+            connectionDot.classList.remove('connected');
+        };
+
+        ws.onclose = function() {
+            statusText.innerText = 'انقطع الاتصال، جاري إعادة المحاولة...';
+            connectionDot.classList.remove('connected');
+            setTimeout(connectWebSocket, 3000);
+        };
+    }
+
+    function resetTradeState() {
+        activeTrade = null;
+        pnlElement.innerText = "$0.00";
+        pnlElement.style.color = "#8b949e";
+        entryPriceElement.innerText = "--";
+        tpPriceElement.innerText = "--";
+        slPriceElement.innerText = "--";
+        tradeTypeElement.innerText = "بانتظار فرصة جديدة";
+        tradeTypeElement.style.color = "#c9d1d9";
+    }
+
+    connectWebSocket();
 </script>
+
 </body>
 </html>
